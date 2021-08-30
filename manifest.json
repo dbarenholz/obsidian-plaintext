@@ -1,10 +1,10 @@
 {
-	"id": "obsidian-sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.1",
-	"minAppVersion": "0.9.12",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md/about",
-	"isDesktopOnly": false
+	"id": "obsidian-plaintext",
+	"name": "Obsidian Plaintext",
+	"version": "0.0.1",
+	"minAppVersion": "0.12.12",
+	"description": "Plugin for Obsidian (https://obsidian.md) to allow opening files as plaintext.",
+	"author": "dbarenholz",
+	"authorUrl": "https://github.com/dbarenholz/dbarenholz",
+	"isDesktopOnly": true
 }
