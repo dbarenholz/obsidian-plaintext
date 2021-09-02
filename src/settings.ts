@@ -29,7 +29,7 @@ export const DEFAULT_SETTINGS: PlaintextSettings = {
 /**
  * The settings tab itself.
  *
- * @version 0.0.1
+ * @version 0.0.2
  * @author dbarenholz
  */
 export class PlaintextSettingTab extends PluginSettingTab {
@@ -47,7 +47,7 @@ export class PlaintextSettingTab extends PluginSettingTab {
 
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "Obsidian Plaintext" });
+    containerEl.createEl("h2", { text: "Plaintext" });
 
     // Debug settings
     new Setting(containerEl)
@@ -64,9 +64,9 @@ export class PlaintextSettingTab extends PluginSettingTab {
 
     // Extension settings
     new Setting(containerEl)
-      .setName("Plaintext Extensions")
+      .setName("Extensions")
       .setDesc(
-        "List of extensions to interpret as plaintext, comma-separated. Will automatically convert to a set when reopening the Obsidian Plaintext settings window"
+        "List of extensions to interpret as plaintext, comma-separated. Will automatically convert to a set when reopening the Obsidian Plaintext settings window. Obsidian default extensions are filtered out!"
       )
       .addText((text) => {
         text
@@ -154,20 +154,10 @@ export class PlaintextSettingTab extends PluginSettingTab {
           // Save settings
           this.plugin.settings.extensions = current_exts;
           await this.plugin.saveSettings();
+
+          // Do the work
+          this.plugin.processExts(this.plugin.settings.extensions);
         };
       });
-    // .addButton((button) => {
-    //   button
-    //     .setButtonText("Update")
-    //     .setTooltip("Updates the extensions")
-    //     .onClick(async () => {
-    //       // If changes are null, do nothing
-    //       if (this.changes == null && this.plugin.settings.debug) {
-    //         console.log("Obsidian Plaintext: No changes made.");
-    //         await this.plugin.saveSettings();
-    //         return;
-    //       }
-
-    // });
   }
 }

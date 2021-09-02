@@ -1,9 +1,9 @@
 {
 	"id": "obsidian-plaintext",
-	"name": "Obsidian Plaintext",
-	"version": "0.0.1",
+	"name": "Plaintext",
+	"version": "0.0.2",
 	"minAppVersion": "0.12.12",
-	"description": "Plugin for Obsidian (https://obsidian.md) to allow opening files as plaintext.",
+	"description": "Allow opening specified files as plaintext.",
 	"author": "dbarenholz",
 	"authorUrl": "https://github.com/dbarenholz/dbarenholz",
 	"isDesktopOnly": true

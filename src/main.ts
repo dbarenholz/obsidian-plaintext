@@ -1,63 +1,105 @@
-// TODO: Do I need a custom view type?
-// import { VIEW_TYPE_PLAINTEXT } from "constants";
-import { Plugin, WorkspaceLeaf } from "obsidian";
+import { Plugin, WorkspaceLeaf, ViewCreator } from "obsidian";
+import { obsidianExts } from "./helper";
 import { PlaintextSettings, PlaintextSettingTab, DEFAULT_SETTINGS } from "./settings";
 import PlaintextView from "./view";
 
 /**
- * The plugin class, extends Obsidian Plugin.
+ * Plaintext plugin.
+ *
+ * This plugin allows you to edit specified extensions as plaintext files.
+ * It does NOT check if a file is binary or textual!
  *
  * @author dbarenholz
+ * @version 0.1.0
  */
 export default class PlaintextPlugin extends Plugin {
   public settings: PlaintextSettings;
-  private view: PlaintextView;
 
-  async onload() {
+  /**
+   * Code that runs (once) when plugin is loaded.
+   */
+  async onload(): Promise<void> {
     console.log("Obsidian Plaintext: loaded plugin.");
 
+    // Load the settings
     await this.loadSettings();
 
+    // Add settings tab
     this.addSettingTab(new PlaintextSettingTab(this.app, this));
 
-    // Adds an item to the status bar (bottom row of the screen)
-    // TODO: When editing a file in plaintext mode, add item stating "editing plaintext"
-    // this.addStatusBarItem().setText("Plain Text");
-
-    // Stuff for editor
-    // this.registerCodeMirror((cm: CodeMirror.Editor) => {
-    //   console.log("codemirror", cm);
-    // });
-
-    // TODO: Do I need this? If so, how does it work?
-    // this.registerView(VIEW_TYPE_PLAINTEXT, (leaf: WorkspaceLeaf) => (this.view = new PlaintextView(leaf)));
-
-    // Relevant items have class: nav-file-title is-unsupported
-    const items = document.getElementsByClassName("nav-file-title is-unsupported");
-    const numItems = items.length;
-    for (let i = 0; i < numItems; i++) {
-      const thing = items.item(i) as HTMLElement;
-      this.registerDomEvent(thing, "click", (evt: MouseEvent) => {
-        // TODO: Test if this prevents defaukt behaviour
-        evt.stopImmediatePropagation();
-        // TODO: Open the actual file
-        console.log("TODO: Open the file.");
-
-        // TODO: Do I need a custom leaf type?
-        this.app.workspace.createLeafBySplit(null, "vertical", false);
-      });
-    }
+    // Do the work
+    this.processExts(this.settings.extensions);
   }
 
-  onunload() {
+  /**
+   * Code that runs (once) when the plugin is unloaded.
+   */
+  onunload(): void {
     console.log("Obsidian Plaintext: unloaded plugin.");
   }
 
-  async loadSettings() {
+  /**
+   * Loads the settings.
+   */
+  async loadSettings(): Promise<void> {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
 
-  async saveSettings() {
+  /**
+   * Saves the settings.
+   */
+  async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
   }
+
+  /**
+   * Creates a view for a plaintext file.
+   * Plaintext views have <b>NO</b> syntax highlighting or other fancy features!
+   *
+   * @param leaf The leaf to create the view at
+   * @param ext Plaintext extension
+   * @returns Plaintext view
+   */
+  viewCreator: ViewCreator = (leaf: WorkspaceLeaf, ext?: string): PlaintextView => {
+    return new PlaintextView(leaf, ext);
+  };
+
+  /**
+   * Processes the extensions.
+   *
+   * @param exts extensions
+   */
+  processExts = (exts: string[]): void => {
+    if (exts.length == 0) {
+      console.log("Plaintext: No extensions to process.");
+      return;
+    }
+
+    for (const ext of exts) {
+      // Disallow using obsidian defaults
+      if (ext in obsidianExts) {
+        if (this.settings.debug) {
+          console.log(`Plaintext: Extension '${ext}' is used by Obsidian already! Don't override Obsidian.`);
+        }
+      }
+
+      // Try to register view
+      try {
+        this.registerView(ext, this.viewCreator);
+      } catch {
+        if (this.settings.debug) {
+          console.log(`Plaintext: Extension '${ext}' already has a view registered, ignoring...`);
+        }
+      }
+
+      // Try to register extension
+      try {
+        this.registerExtensions([ext], ext);
+      } catch {
+        if (this.settings.debug) {
+          console.log(`Plaintext: Extension '${ext}' is already registered, ignoring...`);
+        }
+      }
+    }
+  };
 }
