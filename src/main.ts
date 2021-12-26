@@ -1,25 +1,28 @@
 import { Plugin, WorkspaceLeaf, ViewCreator } from "obsidian";
-import { obsidianExts } from "./helper";
+import { removeObsidianExtensions } from "./helper";
 import { PlaintextSettings, PlaintextSettingTab, DEFAULT_SETTINGS } from "./settings";
 import PlaintextView from "./view";
 
 /**
  * Plaintext plugin.
  *
- * This plugin allows you to edit specified extensions as plaintext files.
- * It does NOT check if a file is binary or textual!
+ * Allows you to edit files with specified extensions as if they are plaintext files.
+ * There are _absolutely no_ checks to see whether or not you should actually do so. 
+ * 
+ * Use common sense, and don't edit `.exe` or similar binaries.
  *
  * @author dbarenholz
  * @version 0.1.0
  */
 export default class PlaintextPlugin extends Plugin {
+  // The settings of the plugin.
   public settings: PlaintextSettings;
 
   /**
    * Code that runs (once) when plugin is loaded.
    */
   async onload(): Promise<void> {
-    console.log("Obsidian Plaintext: loaded plugin.");
+    console.log("[Plaintext]: loaded plugin.");
 
     // Load the settings
     await this.loadSettings();
@@ -27,15 +30,17 @@ export default class PlaintextPlugin extends Plugin {
     // Add settings tab
     this.addSettingTab(new PlaintextSettingTab(this.app, this));
 
-    // Do the work
-    this.processExts(this.settings.extensions);
+    // Add extensions that we need to add.
+    this.addExtensions(this.settings.extensions);
   }
 
   /**
    * Code that runs (once) when the plugin is unloaded.
    */
   onunload(): void {
-    console.log("Obsidian Plaintext: unloaded plugin.");
+    // cleanup
+    this.removeExtensions(this.settings.extensions);
+    console.log("[Plaintext]: unloaded plugin.");
   }
 
   /**
@@ -54,52 +59,88 @@ export default class PlaintextPlugin extends Plugin {
 
   /**
    * Creates a view for a plaintext file.
-   * Plaintext views have <b>NO</b> syntax highlighting or other fancy features!
    *
    * @param leaf The leaf to create the view at
-   * @param ext Plaintext extension
    * @returns Plaintext view
    */
-  viewCreator: ViewCreator = (leaf: WorkspaceLeaf, ext?: string): PlaintextView => {
-    return new PlaintextView(leaf, ext);
+  viewCreator: ViewCreator = (leaf: WorkspaceLeaf): PlaintextView => {
+    return new PlaintextView(leaf);
   };
 
   /**
-   * Processes the extensions.
-   *
-   * @param exts extensions
+   * Registers extensions, and makes views for them.
+   * 
+   * @param exts The extensions to register and add views for.
    */
-  processExts = (exts: string[]): void => {
-    if (exts.length == 0) {
-      console.log("Plaintext: No extensions to process.");
-      return;
-    }
+  addExtensions = (exts: string[]): void => {
+    // Remove obsidian exts just in case
+    exts = removeObsidianExtensions(exts)
 
-    for (const ext of exts) {
-      // Disallow using obsidian defaults
-      if (ext in obsidianExts) {
-        if (this.settings.debug) {
-          console.log(`Plaintext: Extension '${ext}' is used by Obsidian already! Don't override Obsidian.`);
-        }
-      }
-
+    // Loop through extensions
+    exts.forEach((ext) => {
       // Try to register view
       try {
         this.registerView(ext, this.viewCreator);
       } catch {
         if (this.settings.debug) {
-          console.log(`Plaintext: Extension '${ext}' already has a view registered, ignoring...`);
+          console.log(`[Plaintext]: Extension '${ext}' already has a view registered, ignoring...`);
         }
       }
 
       // Try to register extension
       try {
+        // Note: viewtype is set to 'ext' here for possible future expansion to include syntax highlighting based on extension type.
         this.registerExtensions([ext], ext);
       } catch {
         if (this.settings.debug) {
-          console.log(`Plaintext: Extension '${ext}' is already registered, ignoring...`);
+          console.log(`[Plaintext]: Extension '${ext}' is already registered, ignoring...`);
         }
       }
+
+      // Logging
+      if (this.settings.debug) {
+        console.log(`[Plaintext]: added=${ext}`);
+      }
+    })
+  };
+
+  /**
+   * Deregisters extensions, and removes views made for them.
+   * 
+   * @param exts The extensions to deregister and remove views for.
+   */
+  removeExtensions = (exts: string[]): void => {
+    // Remove obsidian exts just in case
+    exts = removeObsidianExtensions(exts)
+
+    // Try to deregister the views
+    exts.forEach((ext) => {
+      // Before unregistering the view: close active leaf if of type ext
+      if (ext == this.app.workspace.activeLeaf.view.getViewType()) {
+        this.app.workspace.activeLeaf.detach();
+      }
+
+      try {
+        this.app.viewRegistry.unregisterView(ext)
+      } catch {
+        if (this.settings.debug) {
+          console.log(`[Plaintext]: View for extension '${ext}' cannot be deregistered...`);
+        }
+      }
+    });
+
+    // Try to deregister the extensions
+    try {
+      this.app.viewRegistry.unregisterExtensions(exts)
+    } catch {
+      if (this.settings.debug) {
+        console.log(`[Plaintext]: Cannot deregister extensions...`);
+      }
+    }
+
+    // Logging
+    if (this.settings.debug) {
+      console.log(`[Plaintext]: removed=${exts}`);
     }
   };
 }

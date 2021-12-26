@@ -2,38 +2,30 @@ import CodeMirror from "codemirror";
 import { TextFileView, WorkspaceLeaf } from "obsidian";
 
 /**
- * The view used for plaintext files.
- * Editing is facilitated with a codemirror instance, with minimal settings.
+ * The view used for plaintext files. Uses a CodeMirror 5 instance. 
+ * Perhaps this can be updated to CodeMirror 6 in the future.
  *
  * @author dbarenholz
- * @version 0.0.2
+ * @version 0.1.0
  */
 export default class PlaintextView extends TextFileView {
   // Internal codemirror instance
-  codeMirror: CodeMirror.Editor;
-
-  // Current file extension
-  ext: string;
+  public cm: CodeMirror.Editor;
 
   // Constructor
-  constructor(leaf: WorkspaceLeaf, ext: string) {
+  constructor(leaf: WorkspaceLeaf) {
     // Call super
     super(leaf);
 
     // Create code mirror instance and add listener to it.
-    // TODO: Check if this theme needs to be added or not
-    // this.codeMirror = CodeMirror(this.contentEl, {
-    //   theme: "obsidian",
-    // });
-    this.codeMirror = CodeMirror(this.contentEl);
-    this.codeMirror.on("changes", this.changed);
-
-    // Save extension
-    this.ext = ext;
+    this.cm = CodeMirror(this.contentEl);
+    this.cm.on("changes", this.changed);
   }
 
   /**
-   * Event handler for CodeMirror editor. Requests a save.
+   * Event handler for CodeMirror editor.
+   * Requests a save.
+   * 
    * @param _ unused
    * @param __  unused
    */
@@ -42,10 +34,11 @@ export default class PlaintextView extends TextFileView {
   };
 
   /**
-   * Event handler for resizing a view. Refreshes codemirror.
+   * Event handler for resizing a view.
+   * Refreshes codemirror instance.
    */
   onResize(): void {
-    this.codeMirror.refresh();
+    this.cm.refresh();
   }
 
   /**
@@ -55,7 +48,7 @@ export default class PlaintextView extends TextFileView {
    * @returns The file contents as string.
    */
   getViewData = (): string => {
-    return this.codeMirror.getValue();
+    return this.cm.getValue();
   };
 
   /**
@@ -71,31 +64,47 @@ export default class PlaintextView extends TextFileView {
    */
   setViewData = (data: string, clear?: boolean): void => {
     if (clear) {
-      // Hardcoded MIME type. Everything is plain text.
-      this.codeMirror.swapDoc(CodeMirror.Doc(data, "text/plain"));
+      this.cm.swapDoc(CodeMirror.Doc(data, "text/plain")); // everything is plaintext
     } else {
-      this.codeMirror.setValue(data);
+      this.cm.setValue(data);
     }
   };
 
-  // Clearing this particular item is setting the value to an empty string
+  /**
+   * Clears the current codemirror instance.
+   */
   clear = (): void => {
-    this.codeMirror.setValue("");
-    this.codeMirror.clearHistory();
+    this.cm.setValue("");
+    this.cm.clearHistory();
   };
 
-  // This method doesn't really do much for our usecase...
+  /**
+   * Provides a boolean to indicate if a particular extension can be opened in this instance.
+   * 
+   * @param extension the extension to check
+   * @returns `true` if `extension` is identical to `this.ext`, `false` otherwise.
+   */
   canAcceptExtension(extension: string): boolean {
-    return extension == this.ext;
+    return extension == this.file.extension;
   }
 
-  // Returns the extension
+  /**
+   * Returns the viewtype of this codemirror instance.
+   * The viewtype is the extension of the file that is opened.
+   * 
+   * @returns The viewtype (file extension) of this codemirror instance.
+   */
   getViewType(): string {
-    return this.ext;
+    return this.file ? this.file.extension : "text/plain (no file)";
   }
 
-  // Returns the basename of the open file, or "plaintext" if it doesn't exist
+  /**
+   * Returns a string indicating which file is currently open, if any.
+   * If no file is open, returns that.
+   * 
+   * @returns A string indicating the opened file, if any.
+   */
   getDisplayText(): string {
-    return this.file ? this.file.basename : "plaintext (no file)";
+    return this.file ? this.file.basename : "text/plain (no file)";
   }
 }

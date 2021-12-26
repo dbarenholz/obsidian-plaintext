@@ -1,10 +1,15 @@
 import PlaintextPlugin from "./main";
 import { App, PluginSettingTab, Setting } from "obsidian";
+import { removeObsidianExtensions } from "./helper";
+import { nextTick } from "process";
 
 /**
- * Possible settings for the plaintext plugin.
+ * Plaintext plugin settings.
+ * 
+ * Currently, there are only settings on whether to print debug prints to console,
+ * and a list of extensions that should be considered plaintext.
  *
- * @version 0.0.1
+ * @version 0.1.0
  * @author dbarenholz
  */
 export interface PlaintextSettings {
@@ -16,9 +21,9 @@ export interface PlaintextSettings {
 }
 
 /**
- * Default settings.
+ * The defaults: no debugging, and no extensions to consider for the plaintext plugin.
  *
- * @version 0.0.1
+ * @version 0.1.0
  * @author dbarenholz
  */
 export const DEFAULT_SETTINGS: PlaintextSettings = {
@@ -29,27 +34,34 @@ export const DEFAULT_SETTINGS: PlaintextSettings = {
 /**
  * The settings tab itself.
  *
- * @version 0.0.2
+ * @version 0.1.0
  * @author dbarenholz
  */
 export class PlaintextSettingTab extends PluginSettingTab {
-  plugin: PlaintextPlugin;
-  changes: string;
+  // The plugin itself
+  private plugin: PlaintextPlugin;
 
+  // Changes made to the extension array
+  private changes: string;
+
+  // Constructor: Creates a settingtab for this plugin.
   constructor(app: App, plugin: PlaintextPlugin) {
     super(app, plugin);
     this.plugin = plugin;
     this.changes = null;
   }
-
+  /**
+   * The method called to display the settingtab.
+   */
   display(): void {
+    // Retrieve the container element
     let { containerEl } = this;
-
     containerEl.empty();
 
+    // Write the title of the settings page.
     containerEl.createEl("h2", { text: "Plaintext" });
 
-    // Debug settings
+    // Add debug setting
     new Setting(containerEl)
       .setName("Debug")
       .setDesc("Turn on for debug prints in console.")
@@ -62,11 +74,13 @@ export class PlaintextSettingTab extends PluginSettingTab {
         });
       });
 
-    // Extension settings
+    // Add extension setting
     new Setting(containerEl)
       .setName("Extensions")
       .setDesc(
-        "List of extensions to interpret as plaintext, comma-separated. Will automatically convert to a set when reopening the Obsidian Plaintext settings window. Obsidian default extensions are filtered out!"
+        "List of extensions to interpret as plaintext, comma-separated."
+        + " Will automatically convert to a set when reopening the Obsidian Plaintext settings window."
+        + " Obsidian's default extensions are filtered out!"
       )
       .addText((text) => {
         text
@@ -74,8 +88,10 @@ export class PlaintextSettingTab extends PluginSettingTab {
           .setValue(Array.from(this.plugin.settings.extensions).toString())
           .onChange((value) => (this.changes = value.toLowerCase().trim()));
 
+
+        // Can't seem to set to a separate function due to incorrect `this`
         text.inputEl.onblur = async () => {
-          // Grab set of saved extensions
+          // Get the currently enabled extensions from the plaintext plugin.
           let current_exts = Array.from(this.plugin.settings.extensions);
           current_exts =
             current_exts == [] || current_exts == null || current_exts == undefined
@@ -83,81 +99,44 @@ export class PlaintextSettingTab extends PluginSettingTab {
               : Array.from(new Set(current_exts));
 
           if (this.plugin.settings.debug) {
-            console.log(`Current exts: ${Array.from(this.plugin.settings.extensions).toString()}`);
+            console.log(`[Plaintext]: Current exts=${Array.from(this.plugin.settings.extensions).toString()}`);
           }
 
-          // Grab set of new extensions
-          let new_exts = this.changes
+          // Grab the set of new extensions
+          let new_exts = this.changes == null || this.changes == undefined ? [] : removeObsidianExtensions(this.changes
             .split(",") // split on comma
             .map((s) => s.toLowerCase().trim()) // convert to lowercase and remove spaces
-            .filter((s) => s != ""); // remove empty elements
-
-          // Set-ify
-          new_exts = Array.from(new Set(new_exts));
+            .filter((s) => s != "")); // remove empty elements
 
           if (this.plugin.settings.debug) {
-            console.log(`New exts: ${new_exts}`);
+            console.log(`[Plaintext]: New exts=${new_exts}`);
           }
 
-          // Extensions that should be added
-          let to_add: string[] = [];
-
-          new_exts.forEach((nExt) => {
-            // New is also present in current -- no change
-            if (current_exts.includes(nExt)) {
-              // do nothing
-            } else {
-              // New is NOT present in current -- ADD!
-              to_add.push(nExt);
-            }
-          });
+          // Find which extensions to add.
+          let to_add = new_exts.filter(nExt => !current_exts.includes(nExt))
 
           if (this.plugin.settings.debug) {
-            console.log(`To add: ${to_add}`);
-          }
-
-          // Extensions that should be removed
-          let to_remove: string[] = [];
-
-          current_exts.forEach((cExt) => {
-            // Current is also present in new -- no change
-            if (new_exts.includes(cExt)) {
-              // do nothing
-            } else {
-              // Current is NOT present in new -- REMOVE!
-              to_remove.push(cExt);
-            }
-          });
-
-          if (this.plugin.settings.debug) {
-            console.log(`To remove: ${to_remove}`);
+            console.log(`[Plaintext]: add=${to_add}`);
           }
 
           // Actually add the extensions
-          to_add.forEach((nExt) => {
-            current_exts.push(nExt);
+          this.plugin.addExtensions(to_add)
 
-            if (this.plugin.settings.debug) {
-              console.log(`Added: ${nExt}`);
-            }
-          });
+          // Find which extensions to remove.
+          let to_remove = current_exts.filter(cExt => !new_exts.includes(cExt))
+
+          if (this.plugin.settings.debug) {
+            console.log(`[Plaintext]: remove=${to_remove}`);
+          }
 
           // Actually remove the extensions
-          to_remove.forEach((cExt) => {
-            current_exts.remove(cExt);
-
-            if (this.plugin.settings.debug) {
-              console.log(`Removed: ${cExt}`);
-            }
-          });
+          this.plugin.removeExtensions(to_remove)
 
           // Save settings
-          this.plugin.settings.extensions = current_exts;
+          const updated_exts = current_exts.concat(to_add).filter((ext) => !to_remove.includes(ext))
+          this.plugin.settings.extensions = updated_exts;
           await this.plugin.saveSettings();
-
-          // Do the work
-          this.plugin.processExts(this.plugin.settings.extensions);
-        };
+        }
       });
   }
 }
