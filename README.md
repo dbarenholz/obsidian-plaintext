@@ -35,7 +35,12 @@ This is free. Keep your money, I don't want it.
 
 ## Changelog
 
-**Version 0.2.0 (current)**:
+**Version 0.2.1 (current)**:
+
+- Implements [#7](https://github.com/dbarenholz/obsidian-plaintext/issues/7) using a button in the file explorer.
+- Also adds a command (available through the command pallette with `CTRL+P`) that creates a new plaintext file.
+
+**Version 0.2.0**:
 
 - Long overdue: plugin is enabled for mobile!
 - Extra protection: by default, extensions that other plugins add (such as .csv) are not allowed anymore!

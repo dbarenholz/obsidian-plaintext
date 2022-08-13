@@ -1,5 +1,5 @@
 import { Plugin, WorkspaceLeaf, ViewCreator } from "obsidian";
-import { removeObsidianExtensions, removeOtherExtensions } from "./helper";
+import { plaintextFileButtonIcon, removeObsidianExtensions, removeOtherExtensions } from "./helper";
 import { PlaintextSettings, PlaintextSettingTab, DEFAULT_SETTINGS } from "./settings";
 import { PlaintextView } from "./view";
 
@@ -7,12 +7,11 @@ import { PlaintextView } from "./view";
  * Plaintext plugin.
  *
  * Allows you to edit files with specified extensions as if they are plaintext files.
- * There are _absolutely no_ checks to see whether or not you should actually do so. 
  * 
  * Use common sense, and don't edit `.exe` or similar binaries.
  *
  * @author dbarenholz
- * @version 0.2.0
+ * @version 0.2.1
  */
 export default class PlaintextPlugin extends Plugin {
   // The settings of the plugin.
@@ -32,6 +31,27 @@ export default class PlaintextPlugin extends Plugin {
 
     // Add extensions that we need to add.
     this.addExtensions(this.settings.extensions);
+
+    // Add button to file explorer on launch
+    this.app.workspace.onLayoutReady(() => {
+      const explorers = this.app.workspace.getLeavesOfType('file-explorer');
+      explorers.forEach(exp => this.addPlaintextButton(exp));
+    });
+
+    // Add button to file explorers opened later
+    this.registerEvent(
+      this.app.workspace.on('layout-change', () => {
+        const explorers = this.app.workspace.getLeavesOfType('file-explorer');
+        explorers.forEach(exp => this.addPlaintextButton(exp));
+      })
+    );
+
+    // Add command
+    this.addCommand({
+      id: "create-plaintext-file",
+      name: "Create new plaintext file.",
+      callback: () => this.clickPlaintextButton()
+    })
   }
 
   /**
@@ -39,6 +59,8 @@ export default class PlaintextPlugin extends Plugin {
    */
   onunload(): void {
     this.removeExtensions(this.settings.extensions);
+    this.removePlaintextButton();
+
     console.log("[Plaintext]: unloaded plugin.");
   }
 
@@ -62,7 +84,7 @@ export default class PlaintextPlugin extends Plugin {
    * @param leaf The leaf to create the view at
    * @returns Plaintext view
    */
-  viewCreator: ViewCreator = (leaf: WorkspaceLeaf): PlaintextView => {
+  private viewCreator: ViewCreator = (leaf: WorkspaceLeaf): PlaintextView => {
     return new PlaintextView(leaf);
   };
 
@@ -72,7 +94,7 @@ export default class PlaintextPlugin extends Plugin {
    * @param exts Extensions that are about to be added.
    * @returns A finalised list of exts to add.
    */
-  processConflictingExtensions = (exts: string[]): string[] => {
+  private processConflictingExtensions = (exts: string[]): string[] => {
     exts = removeObsidianExtensions(exts)
     if (!this.settings.destroyOtherPlugins) {
       exts = removeOtherExtensions(exts)
@@ -149,5 +171,55 @@ export default class PlaintextPlugin extends Plugin {
     console.log(`[Plaintext]: removed=${exts}`);
 
   };
+
+  /**
+   * This is what happens when you click the button.
+   */
+  private clickPlaintextButton = () => {
+    // TODO: Figure out an implementation to add files that is mobile friendly.
+    console.log("you clicked me!")
+  }
+
+  /**
+   * Adds a button to the explorer.
+   * 
+   * @param explorer  the explorer to add the button to
+   * @from https://github.com/claremacrae/reveal-active-file-button-plugin/blob/d147544602533103bda7dfd3f18d86931196c0af/src/plugin.ts
+   */
+  private addPlaintextButton(explorer: WorkspaceLeaf): void {
+    // Find an existing button if it exists
+    const existingButton = explorer.view.containerEl.querySelector('.create-plaintext-file-button')
+    if (!existingButton) {
+      // Grab the explorer view, then find the top buttons.
+      const container = explorer.view.containerEl as HTMLDivElement;
+      const navContainer = container.querySelector('div.nav-buttons-container') as HTMLDivElement;
+      if (navContainer) {
+        // Create a new button with some properties
+        const button = document.createElement('div');
+        button.innerHTML = plaintextFileButtonIcon;
+        button.setAttribute('aria-label', 'Create new plaintext file.');
+        button.className = 'nav-action-button create-plaintext-file-button';
+        this.registerDomEvent(button, 'click', () => {
+          this.clickPlaintextButton()
+        });
+        navContainer.appendChild(button);
+      }
+    }
+
+
+  }
+
+  /**
+   * Removes plaintext button on cleanup.
+   */
+  private removePlaintextButton(): void {
+    const explorers = this.app.workspace.getLeavesOfType('file-explorer');
+    explorers.forEach((exp) => {
+      const button = exp.view.containerEl.querySelector('.create-plaintext-file-button')
+      if (button) {
+        button.remove()
+      }
+    });
+  }
 
 }
