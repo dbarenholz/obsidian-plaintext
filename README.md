@@ -18,7 +18,7 @@ For now, nothing is planned. If you're interested in features, please make an is
 
 ## Contributing
 
-Also excited about making Obsidian a full-fledged IDE? Cool, me too! Contact me and let's talk! Pull requests (especially one that updates the code to use `CodeMirror 6`) are very welcome.
+Happy to accept PRs on issues!
 
 ## Pricing
 
@@ -26,7 +26,12 @@ This is free. Keep your money, I don't want it.
 
 ## Changelog
 
-**Version 0.1.0 (current)**:
+**Version 0.2.0 (current)**:
+
+- Long overdue: plugin is enabled for mobile!
+- We have over 500 downloads!
+
+**Version 0.1.0**:
 
 - Complete rewrite of registering and deregistering.
 - Now _actually_ removes views when deregistering a particular extension.
