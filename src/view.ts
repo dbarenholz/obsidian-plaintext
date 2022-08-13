@@ -8,7 +8,7 @@ import { TextFileView, WorkspaceLeaf } from "obsidian";
  * @author dbarenholz
  * @version 0.1.0
  */
-export default class PlaintextView extends TextFileView {
+export class PlaintextView extends TextFileView {
   // Internal codemirror instance
   public cm: CodeMirror.Editor;
 

@@ -1,7 +1,7 @@
 import { Plugin, WorkspaceLeaf, ViewCreator } from "obsidian";
-import { removeObsidianExtensions } from "./helper";
+import { removeObsidianExtensions, removeOtherExtensions } from "./helper";
 import { PlaintextSettings, PlaintextSettingTab, DEFAULT_SETTINGS } from "./settings";
-import PlaintextView from "./view";
+import { PlaintextView } from "./view";
 
 /**
  * Plaintext plugin.
@@ -12,7 +12,7 @@ import PlaintextView from "./view";
  * Use common sense, and don't edit `.exe` or similar binaries.
  *
  * @author dbarenholz
- * @version 0.1.0
+ * @version 0.2.0
  */
 export default class PlaintextPlugin extends Plugin {
   // The settings of the plugin.
@@ -38,7 +38,6 @@ export default class PlaintextPlugin extends Plugin {
    * Code that runs (once) when the plugin is unloaded.
    */
   onunload(): void {
-    // cleanup
     this.removeExtensions(this.settings.extensions);
     console.log("[Plaintext]: unloaded plugin.");
   }
@@ -68,13 +67,27 @@ export default class PlaintextPlugin extends Plugin {
   };
 
   /**
+   * Processes the list of extensions that the user inputs, and removes conflicting ones that should not be added.
+   * 
+   * @param exts Extensions that are about to be added.
+   * @returns A finalised list of exts to add.
+   */
+  processConflictingExtensions = (exts: string[]): string[] => {
+    exts = removeObsidianExtensions(exts)
+    if (!this.settings.destroyOtherPlugins) {
+      exts = removeOtherExtensions(exts)
+    }
+    return exts
+  }
+
+  /**
    * Registers extensions, and makes views for them.
    * 
    * @param exts The extensions to register and add views for.
    */
   addExtensions = (exts: string[]): void => {
-    // Remove obsidian exts just in case
-    exts = removeObsidianExtensions(exts)
+    // Process extensions that may conflict with Obsidian or enabled plugins
+    exts = this.processConflictingExtensions(exts)
 
     // Loop through extensions
     exts.forEach((ext) => {
@@ -82,9 +95,7 @@ export default class PlaintextPlugin extends Plugin {
       try {
         this.registerView(ext, this.viewCreator);
       } catch {
-        if (this.settings.debug) {
-          console.log(`[Plaintext]: Extension '${ext}' already has a view registered, ignoring...`);
-        }
+        console.log(`[Plaintext]: Extension '${ext}' already has a view registered, ignoring...`);
       }
 
       // Try to register extension
@@ -92,15 +103,11 @@ export default class PlaintextPlugin extends Plugin {
         // Note: viewtype is set to 'ext' here for possible future expansion to include syntax highlighting based on extension type.
         this.registerExtensions([ext], ext);
       } catch {
-        if (this.settings.debug) {
-          console.log(`[Plaintext]: Extension '${ext}' is already registered, ignoring...`);
-        }
+        console.log(`[Plaintext]: Extension '${ext}' is already registered, ignoring...`);
       }
 
-      // Logging
-      if (this.settings.debug) {
-        console.log(`[Plaintext]: added=${ext}`);
-      }
+      // DEBUG
+      console.log(`[Plaintext]: added=${ext}`);
     })
   };
 
@@ -110,22 +117,23 @@ export default class PlaintextPlugin extends Plugin {
    * @param exts The extensions to deregister and remove views for.
    */
   removeExtensions = (exts: string[]): void => {
-    // Remove obsidian exts just in case
-    exts = removeObsidianExtensions(exts)
+    // Process extensions that may conflict with Obsidian or enabled plugins
+    exts = this.processConflictingExtensions(exts)
 
     // Try to deregister the views
     exts.forEach((ext) => {
       // Before unregistering the view: close active leaf if of type ext
-      if (ext == this.app.workspace.activeLeaf.view.getViewType()) {
+      // Thank you Licat#1607: activeLeaf could be null here causing a crash => Replaced with getActiveViewOfType
+      const view = this.app.workspace.getActiveViewOfType(PlaintextView)
+      if (view && ext == view.getViewType()) {
         this.app.workspace.activeLeaf.detach();
       }
 
       try {
         this.app.viewRegistry.unregisterView(ext)
       } catch {
-        if (this.settings.debug) {
-          console.log(`[Plaintext]: View for extension '${ext}' cannot be deregistered...`);
-        }
+        console.log(`[Plaintext]: View for extension '${ext}' cannot be deregistered...`);
+
       }
     });
 
@@ -133,14 +141,13 @@ export default class PlaintextPlugin extends Plugin {
     try {
       this.app.viewRegistry.unregisterExtensions(exts)
     } catch {
-      if (this.settings.debug) {
-        console.log(`[Plaintext]: Cannot deregister extensions...`);
-      }
+      console.log(`[Plaintext]: Cannot deregister extensions...`);
+
     }
 
-    // Logging
-    if (this.settings.debug) {
-      console.log(`[Plaintext]: removed=${exts}`);
-    }
+    // DEBUG
+    console.log(`[Plaintext]: removed=${exts}`);
+
   };
+
 }
