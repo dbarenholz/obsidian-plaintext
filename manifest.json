@@ -1,9 +1,9 @@
 {
 	"id": "obsidian-plaintext",
 	"name": "Plaintext",
-	"version": "0.2.0",
-	"minAppVersion": "0.13.14",
-	"description": "Allow opening specified files as plaintext (RAW mode).",
+	"version": "0.3.0",
+	"minAppVersion": "0.15.9",
+	"description": "Open any file as if it was plaintext directly in Obsidian.",
 	"author": "dbarenholz",
 	"authorUrl": "https://github.com/dbarenholz/dbarenholz",
 	"isDesktopOnly": false

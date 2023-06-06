@@ -1,3 +1,6 @@
+# vscode
+.vscode 
+
 # Intellij
 *.iml
 .idea
@@ -12,3 +15,6 @@ main.js
 
 # obsidian
 data.json
+
+# Exclude macOS Finder (System Explorer) View States
+.DS_Store

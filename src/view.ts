@@ -1,110 +1,140 @@
-import CodeMirror from "codemirror";
-import { TextFileView, WorkspaceLeaf } from "obsidian";
+import { TFile, TextFileView, WorkspaceLeaf } from "obsidian";
+import { EditorView } from "@codemirror/view";
+import { EditorState } from "@codemirror/state";
+import { basicExtensions, languageExtension } from "./codemirror";
 
 /**
- * The view used for plaintext files. Uses a CodeMirror 5 instance. 
- * Perhaps this can be updated to CodeMirror 6 in the future.
- *
+ * The plaintext view shows a plaintext file, hence it extends the text file view.
+ * Rewritten to use CM6.
+ * 
+ * Code from here: https://github.com/Zachatoo/obsidian-css-editor/blob/main/src/CssEditorView.ts
+ * 
+ * @version 0.3.0
  * @author dbarenholz
- * @version 0.1.0
  */
 export class PlaintextView extends TextFileView {
-  // Internal codemirror instance
-  public cm: CodeMirror.Editor;
+	private editorView: EditorView;
+	private editorState: EditorState;
+	file: TFile;
 
-  // Constructor
-  constructor(leaf: WorkspaceLeaf) {
-    // Call super
-    super(leaf);
+	constructor(leaf: WorkspaceLeaf) {
+		super(leaf);
 
-    // Create code mirror instance and add listener to it.
-    this.cm = CodeMirror(this.contentEl);
-    this.cm.on("changes", this.changed);
-  }
+		this.editorState = EditorState.create({
+			extensions: [
+				basicExtensions,
+				// TODO: Figure out how to nicely set language modes.
+				languageExtension,
+				EditorView.updateListener.of((update) => {
+					if (update.docChanged) {
+						this.save(false);
+					}
+				}),
+			],
+		});
 
-  /**
-   * Event handler for CodeMirror editor.
-   * Requests a save.
-   * 
-   * @param _ unused
-   * @param __  unused
-   */
-  changed = async (_: CodeMirror.Editor, __: CodeMirror.EditorChangeLinkedList[]): Promise<void> => {
-    this.requestSave();
-  };
+		this.editorView = new EditorView({
+			state: this.editorState,
+			parent: this.contentEl,
+		});
+	}
 
-  /**
-   * Event handler for resizing a view.
-   * Refreshes codemirror instance.
-   */
-  onResize(): void {
-    this.cm.refresh();
-  }
+	/**
+	 * Gets the type of this view.
+	 * We use `extension-view`, where extension is the file extension.
+	 * This is also used in main.ts, where the view types are registered and deregistered.
+	 *
+	 * @returns The view-type constructed fron the file extension if it exists, otherwise "text/plain".
+	 */
+	getViewType(): string {
+		return this.file ? `${this.file.extension}-view` : "text/plain";
+	}
 
-  /**
-   * Getter for the data in the view.
-   * Called when saving the contents.
-   *
-   * @returns The file contents as string.
-   */
-  getViewData = (): string => {
-    return this.cm.getValue();
-  };
+	/**
+	 * A string identifier of the Lucide icon that is shown in the tab of this view.
+	 * We use "file-code".
+	 *
+	 * @returns The string "file-code".
+	 */
+	getIcon(): string {
+		return "file-code";
+	}
 
-  /**
-   * Setter for the data in the view.
-   * Called when loading file contents.
-   *
-   * If clear is set, then it means we're opening a completely different file.
-   * In that case, you should call clear(), or implement a slightly more efficient
-   * clearing mechanism given the new data to be set.
-   *
-   * @param data
-   * @param clear
-   */
-  setViewData = (data: string, clear?: boolean): void => {
-    if (clear) {
-      this.cm.swapDoc(CodeMirror.Doc(data, "text/plain")); // everything is plaintext
-    } else {
-      this.cm.setValue(data);
-    }
-  };
+	/**
+	 * Gets the text to display in the header of the tab.
+	 * This is the filename if it exists.
+	 *
+	 * @returns The filename if it exists, otherwise "(no file)".
+	 */
+	getDisplayText(): string {
+		return this.file ? this.file.basename : "(no file)";
+	}
 
-  /**
-   * Clears the current codemirror instance.
-   */
-  clear = (): void => {
-    this.cm.setValue("");
-    this.cm.clearHistory();
-  };
+	/**
+	 * Grabs data from the editor.
+	 * This essentially implements the getViewData method.
+	 *
+	 * @returns Content in the editor.
+	 */
+	getEditorData(): string {
+		return this.editorView.state.doc.toString();
+	}
 
-  /**
-   * Provides a boolean to indicate if a particular extension can be opened in this instance.
-   * 
-   * @param extension the extension to check
-   * @returns `true` if `extension` is identical to `this.ext`, `false` otherwise.
-   */
-  canAcceptExtension(extension: string): boolean {
-    return extension == this.file.extension;
-  }
+	/**
+	 * Method that dispatches editor data.
+	 * This essentially implements the setViewData method.
+	 *
+	 * @param data Content to set in the view.
+	 */
+	dispatchEditorData(data: string) {
+		this.editorView.dispatch({
+			changes: {
+				from: 0,
+				to: this.editorView.state.doc.length,
+				insert: data,
+			},
+		});
+	}
 
-  /**
-   * Returns the viewtype of this codemirror instance.
-   * The viewtype is the extension of the file that is opened.
-   * 
-   * @returns The viewtype (file extension) of this codemirror instance.
-   */
-  getViewType(): string {
-    return this.file ? this.file.extension : "text/plain (no file)";
-  }
+	/**
+	 * Gets the data from the editor.
+	 * This will be called to save the editor contents to the file.
+	 *
+	 * @returns A string representing the content of the editor.
+	 */
+	getViewData(): string {
+		return this.getEditorData();
+	}
 
-  /**
-   * Returns a string indicating which file is currently open, if any.
-   * If no file is open, returns that.
-   * 
-   * @returns A string indicating the opened file, if any.
-   */
-  getDisplayText(): string {
-    return this.file ? this.file.basename : "text/plain (no file)";
-  }
+	/**
+	 * Set the data to the editor.
+	 * This is used to load the file contents.
+	 *
+	 * If clear is set, then it means we're opening a completely different file.
+	 * In that case, you should call clear(), or implement a slightly more efficient
+	 * clearing mechanism given the new data to be set.
+	 *
+	 * @param data data to load
+	 * @param clear whether or not to clear the editor
+	 */
+	setViewData(data: string, clear: boolean): void {
+		if (clear) {
+			// Note: this.clear() destroys the editor completely - this is inaccurate
+			// as we only want to change the editor data.
+			this.dispatchEditorData("");
+		}
+
+		this.dispatchEditorData(data);
+	}
+
+	/**
+	 * Clear the editor.
+	 *
+	 * This is called when we're about to open a completely different file,
+	 * so it's best to clear any editor states like undo-redo history,
+	 * and any caches/indexes associated with the previous file contents.
+	 */
+	clear(): void {
+		this.editorView.destroy();
+	}
 }

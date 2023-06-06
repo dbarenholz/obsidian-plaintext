@@ -1,7 +1,7 @@
 # Plaintext for Obsidian
 
 This is an [Obisidan](https://obsidian.md) plugin that allows you to open _any_ file as plaintext.
-It has been developed for Obsidian **v0.13.14**, and tested on **Windows**.
+It has been developed for Obsidian **v1.3.5**, and tested on **Windows**.
 
 Honestly, as long as you can run any Obsidian version you can _probably_ run this plugin as well.
 The only requirements are that we can register extensions (this existed in v0.12.12 for instance), and that the `viewRegistry` exists, which I'm assuming has been there since the beginning of Obsidian.
@@ -17,7 +17,7 @@ Since 0.2.0 by default you can no longer accidentally break other plugins with v
 ## Installing
 
 Interested in editing files in Obsidian? Great.
-Grab the latest release from the [releases](#) page, and copy `main.js` and `manifest.json` to `.obsidian/plugins/obsidian-plaintext/`. That's it!
+Grab the latest release from the [releases](https://github.com/dbarenholz/obsidian-plaintext/releases) page, and copy `main.js` and `manifest.json` to `.obsidian/plugins/obsidian-plaintext/`. That's it!
 
 You can also install the plugin through Obsidian by searching for **plaintext**.
 
@@ -35,25 +35,33 @@ This is free. Keep your money, I don't want it.
 
 ## Changelog
 
-**Version 0.2.0 (current)**:
+**Version 0.3.0 (current)**:
 
-- Long overdue: plugin is enabled for mobile!
-- Extra protection: by default, extensions that other plugins add (such as .csv) are not allowed anymore!
-- We have over 500 downloads!
+-  Rewrite to use CM6 in stead of CM5. A first step towards https://github.com/dbarenholz/obsidian-plaintext/issues/1.
+-  Fixed https://github.com/dbarenholz/obsidian-plaintext/issues/5 by upgrading to CM6.
+-  Fixed https://github.com/dbarenholz/obsidian-plaintext/issues/11 - shame on me for getting the logic wrong.
+-  Possibly implement https://github.com/dbarenholz/obsidian-plaintext/issues/7? I don't have Obsidian on my phone, so let me know :).
+
+
+**Version 0.2.0**:
+
+-   Long overdue: plugin is enabled for mobile!
+-   Extra protection: by default, extensions that other plugins add (such as .csv) are not allowed anymore!
+-   We have over 500 downloads!
 
 **Version 0.1.0**:
 
-- Complete rewrite of registering and deregistering.
-- Now _actually_ removes views when deregistering a particular extension.
-- Correctly filters out default obsidian extensions: No more accidentally overwriting the default markdown editor.
+-   Complete rewrite of registering and deregistering.
+-   Now _actually_ removes views when deregistering a particular extension.
+-   Correctly filters out default obsidian extensions: No more accidentally overwriting the default markdown editor.
 
 **Version 0.0.2**:
 
-- First actual release.
-- Code is functional! You can open and edit files as plaintext.
+-   First actual release.
+-   Code is functional! You can open and edit files as plaintext.
 
 **Version 0.0.1**:
 
-- Not a release.
-- Initial testing code.
-- This included the functionality for parsing user-inputted extensions.
+-   Not a release.
+-   Initial testing code.
+-   This included the functionality for parsing user-inputted extensions.
