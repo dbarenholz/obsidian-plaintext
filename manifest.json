@@ -1,9 +1,9 @@
 {
 	"id": "obsidian-plaintext",
 	"name": "Plaintext",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"minAppVersion": "0.15.9",
-	"description": "Open any file as if it was plaintext directly in Obsidian.",
+	"description": "[Deprecated] Open any file as if it was plaintext directly in Obsidian.",
 	"author": "dbarenholz",
 	"authorUrl": "https://github.com/dbarenholz/dbarenholz",
 	"isDesktopOnly": false

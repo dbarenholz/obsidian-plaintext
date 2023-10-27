@@ -4,6 +4,7 @@ import {
 	TFolder,
 	TAbstractFile,
 	normalizePath,
+	Notice,
 } from "obsidian";
 import {
 	removeObsidianExtensions,
@@ -49,6 +50,7 @@ export default class PlaintextPlugin extends Plugin {
 			id: "new-plaintext-file",
 			name: "Create new plaintext file",
 			callback: () => {
+				this.showDeprecationMessage();
 				this.createNewFile(app.vault.getRoot());
 			},
 		});
@@ -63,13 +65,34 @@ export default class PlaintextPlugin extends Plugin {
 				menu.addItem((item) => {
 					item.setTitle("New plaintext file")
 						.setIcon("file-plus")
-						.onClick(async () => this.createNewFile(file));
+						.onClick(async () => {
+							this.showDeprecationMessage();
+							this.createNewFile(file);
+						});
 				});
 			})
 		);
 
 		// 4. Other initialization
 		this.registerViewsForExtensions(this.settings.extensions);
+
+		// Show the deprecation message.
+		this.showDeprecationMessage();
+
+	}
+
+	deprecationFragment() {
+		// Use a DocumentFragmet to put a link in a notice.
+		const documentFragment = new DocumentFragment();
+		documentFragment.createEl("span", { text: "Plaintext will soon be deprecated and removed from the community store." })
+		documentFragment.createEl("span", { text: " Please use " })
+		documentFragment.createEl("a", { text: "Obsidian VSCode Editor", href: "obsidian://show-plugin?id=vscode-editor" })
+		documentFragment.createEl("span", { text: " instead!" })
+		return documentFragment;
+	}
+
+	showDeprecationMessage() {
+		new Notice(this.deprecationFragment(), 0);
 	}
 
 	onunload(): void {

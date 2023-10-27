@@ -1,7 +1,7 @@
 {
   "name": "obsidian-plaintext",
-  "version": "0.3.0",
-  "description": "Open any file as if it was plaintext directly in Obsidian.",
+  "version": "0.4.0",
+  "description": "[Deprecated] Open any file as if it was plaintext directly in Obsidian.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

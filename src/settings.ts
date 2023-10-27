@@ -125,6 +125,11 @@ export class PlaintextSettingTab extends PluginSettingTab {
 		// Write the title of the settings page.
 		containerEl.createEl("h2", { text: "Plaintext" });
 
+		// Add deprecation message here too
+		new Setting(containerEl)
+			.setName("Notice")
+			.setDesc(this.plugin.deprecationFragment());
+
 		// Add extension setting
 		new Setting(containerEl)
 			.setName("Extensions")
