@@ -1,5 +1,7 @@
 # Plaintext for Obsidian
 
+**This plugin has been archived in favour of [better alternatives](obsidian://show-plugin?id=vscode-editor).**
+
 This is an [Obisidan](https://obsidian.md) plugin that allows you to open _any_ file as plaintext.
 It has been developed for Obsidian **v1.3.5**, and tested on **Windows**.
 
